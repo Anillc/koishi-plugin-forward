@@ -1,0 +1,21 @@
+{
+  "name": "koishi-plugin-forward",
+  "version": "1.0.0",
+  "description": "forward!",
+  "main": "lib/index.js",
+  "repository": "https://github.com/Anillc/koishi-plugin-forward",
+  "author": "anillc",
+  "license": "MIT",
+  "files": [
+    "lib/"
+  ],
+  "scripts": {
+    "build": "coffee -o lib/ -c src/"
+  },
+  "devDependencies": {
+    "coffeescript": "^2.5.1"
+  },
+  "dependencies": {
+    "koishi": "^3.2.0"
+  }
+}
