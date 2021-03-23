@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "forward!",
   "main": "lib/index.js",
-  "repository": "https://github.com/Anillc/koishi-plugin-forward",
+  "repository": "https://github.com/Anillc/forward",
   "author": "anillc",
   "license": "MIT",
   "files": [
