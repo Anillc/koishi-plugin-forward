@@ -32,7 +32,7 @@ isChannel = ({session}) ->
 module.exports = (ctx) -> ctx.on 'connect', ->
   await updateChannels ctx
   ctx.middleware mid ctx
-  cmd = ctx.command 'forward <to>'
+  cmd = ctx.command 'forward <to>', { authority: 2 }
   cmd.check isChannel
     .option 'remove', '-r 删除转发'
     .channelFields ['forward']
@@ -47,17 +47,17 @@ module.exports = (ctx) -> ctx.on 'connect', ->
       return '已经存在记录。' if i >= 0
       forward.push to
       return '添加成功！，请使用forward.update更新'
-  cmd.subcommand '.list'
+  cmd.subcommand '.list', { authority: 2 }
     .check isChannel
     .channelFields ['forward']
     .action ({session}) ->
       { forward } = session.channel
       return JSON.stringify forward
-  cmd.subcommand '.info'
+  cmd.subcommand '.info', { authority: 2 }
     .check isChannel
     .action ({session}) ->
       return session.channel.id
-  cmd.subcommand '.update'
+  cmd.subcommand '.update', { authority: 2 }
     .action ->
       await updateChannels ctx
       return '更新成功'
