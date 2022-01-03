@@ -46,45 +46,47 @@ const mid=(ctx:Context)=>(session:Session,next: () => void)=>{
 const name='forward-cli';
 
 async function apply(ctx:Context){
-    await initDB(ctx);
-    await updateChannels(ctx);
-    ctx.middleware(mid(ctx));
-    const cmd=ctx.command('forward <to>',{authority:2});
-    cmd.option('remove','-r 删除转发')
-        .action(({session,options},to)=>{
-            // @ts-expect-error
-            const chn=session.channel as Observed<Channel>;
-            const forward=chn.forward;
-            if(!to) return '缺少必要参数';
-            const i=forward.indexOf(to);
-            // @ts-expect-error
-            if(options.remove){
-                if(i==-1) return '没有转发到该频道的记录';
-                forward.splice(i,1);
-                return '删除成功！请使用forward.update更新'
-            }
-            if(i>=0) return '已经存在记录';
-            forward.push(to);
-            return '添加成功！，请使用forward.update更新'
-        })
-    cmd.subcommand('.list',{authority:2})
-        .channelFields(['forward'])
-        .action(({session})=>{
-            // @ts-expect-error
-            const chn=session.channel as Observed<Channel>;
-            const forward=chn.forward;
-            return JSON.stringify(forward);
-        })
-    cmd.subcommand('.info',{authority:2})
-        .action(({session})=>{
-            // @ts-expect-error
-            return session.channelId;
-        })
-    cmd.subcommand('.update',{authority:2})
-        .action(async ()=>{
-            await updateChannels(ctx);
-            return '更新成功！';
-        })
+    ctx.on('connect',async ()=>{
+        await initDB(ctx);
+        await updateChannels(ctx);
+        ctx.middleware(mid(ctx));
+        const cmd=ctx.command('forward <to>',{authority:2});
+        cmd.option('remove','-r 删除转发')
+            .action(({session,options},to)=>{
+                // @ts-expect-error
+                const chn=session.channel as Observed<Channel>;
+                const forward=chn.forward;
+                if(!to) return '缺少必要参数';
+                const i=forward.indexOf(to);
+                // @ts-expect-error
+                if(options.remove){
+                    if(i==-1) return '没有转发到该频道的记录';
+                    forward.splice(i,1);
+                    return '删除成功！请使用forward.update更新'
+                }
+                if(i>=0) return '已经存在记录';
+                forward.push(to);
+                return '添加成功！，请使用forward.update更新'
+            })
+        cmd.subcommand('.list',{authority:2})
+            .channelFields(['forward'])
+            .action(({session})=>{
+                // @ts-expect-error
+                const chn=session.channel as Observed<Channel>;
+                const forward=chn.forward;
+                return JSON.stringify(forward);
+            })
+        cmd.subcommand('.info',{authority:2})
+            .action(({session})=>{
+                // @ts-expect-error
+                return session.channelId;
+            })
+        cmd.subcommand('.update',{authority:2})
+            .action(async ()=>{
+                await updateChannels(ctx);
+                return '更新成功！';
+            })
+    })
 }
 
 export {name,apply};
