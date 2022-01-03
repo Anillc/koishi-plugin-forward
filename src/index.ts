@@ -46,7 +46,7 @@ const mid=(ctx:Context)=>(session:Session,next: () => void)=>{
 const name='forward-cli';
 
 async function apply(ctx:Context){
-    ctx.on('connect',async ()=>{
+    ctx.on('ready',async ()=>{
         await initDB(ctx);
         await updateChannels(ctx);
         ctx.middleware(mid(ctx));
