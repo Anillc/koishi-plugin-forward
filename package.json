@@ -4,18 +4,20 @@
   "description": "forward!",
   "main": "lib/index.js",
   "repository": "https://github.com/Anillc/forward",
-  "author": "anillc",
+  "author": "anillc ConstasJ",
   "license": "MIT",
   "files": [
     "lib/"
   ],
   "scripts": {
-    "build": "coffee -o lib/ -c src/"
+    "build": "tsc -p ."
   },
   "devDependencies": {
-    "coffeescript": "^2.5.1"
+    "coffeescript": "^2.5.1",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.4"
   },
   "dependencies": {
-    "koishi": "^3.2.0"
+    "koishi": "^4.0.0-rc.1"
   }
 }
