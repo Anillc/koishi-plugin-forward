@@ -81,10 +81,10 @@ async function apply(ctx:Context){
                 return JSON.stringify(forward);
             })
         cmd.subcommand('.info',{authority:2})
-            .action(({session})=>{
+            .action(async ({session}) => {
+                const chn = await session?.getChannel();
                 // @ts-expect-error
-                const chn=session.channel as Observed<Channel>;
-                return `${chn.platform}:${session?.channelId}`
+                return `${chn.platform}:${chn.id}`
             })
         cmd.subcommand('.update',{authority:2})
             .action(async ()=>{
