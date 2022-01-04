@@ -24,7 +24,10 @@ async function updateChannels(ctx:Context){
 function ignore(text:string){
     const seg=segment.parse(text);
     if(seg[0].data.content.startsWith('//')) return true;
-    return seg[0].type=='quote' && seg[2].data.content.trim().startsWith('//')
+    const isa:boolean=seg[0].type=='quote';
+    const isb:boolean=seg[2].data.content.trim().startsWith('//');
+    const is=isa && isb;
+    return is;
 }
 
 const mid=(ctx:Context)=>(session:Session,next: () => void)=>{
@@ -32,14 +35,15 @@ const mid=(ctx:Context)=>(session:Session,next: () => void)=>{
     let forward:string;
     if(!session.channelId || ignore(content)) return next();
     try{
-        const rn=channels.find((n)=>n.id=='#{session.platform}:#{session.channelId}')
+        const rn=channels.find((n)=>n.id==`${session.platform}:${session.channelId}`);
         // @ts-expect-error
         forward=rn.forward;
     }catch(e){
         updateChannels(ctx);
         return next();
     }
-    ctx.broadcast(forward+"#{session.author.username}: #{content}");
+    //@ts-expect-error
+    ctx.broadcast(forward+`${session.author.username}: ${content}`);
     next();
 }
 
