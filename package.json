@@ -1,5 +1,5 @@
 {
-  "name": "koishi-plugin-forward",
+  "name": "koishi-plugin-forward-cli",
   "version": "2.0.0-alpha.1",
   "description": "forward!",
   "main": "lib/index.js",
