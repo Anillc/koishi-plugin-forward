@@ -82,9 +82,7 @@ async function apply(ctx:Context){
             })
         cmd.subcommand('.info',{authority:2})
             .action(async ({session}) => {
-                const chn = await session?.getChannel();
-                // @ts-expect-error
-                return `${chn.platform}:${chn.id}`
+                return `${session?.platform}:${session?.channelId}`;
             })
         cmd.subcommand('.update',{authority:2})
             .action(async ()=>{
