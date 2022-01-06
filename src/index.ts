@@ -21,12 +21,15 @@ async function updateChannels(ctx:Context){
 }
 
 function ignore(text:string){
-    const seg=segment.parse(text);
-    if(!seg) return false;
-    if(seg[0].data.content.startsWith('//')) return true;
-    const isa:boolean=seg[0].type=='quote';
-    const isb:boolean=seg[2].data.content.trim().startsWith('//');
-    return isa && isb;
+    const seg = segment.parse(text);
+    if (!seg) return false;
+    if (seg[0].data.content.startsWith('//')) return true;
+    if (seg[2]) {
+        const isa: boolean = seg[0].type == 'quote';
+        const isb: boolean = seg[2].data.content.trim().startsWith('//');
+        return isa && isb;
+    }
+    return false;
 }
 
 const mid=(ctx:Context)=>(session:Session,next: () => void)=>{
