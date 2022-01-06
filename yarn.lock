@@ -285,11 +285,6 @@ co@^4.6.0:
   resolved "https://registry.npm.taobao.org/co/download/co-4.6.0.tgz#6ea6bdf3d853ae54ccb8e47bfa0bf3f9031fb184"
   integrity sha1-bqa989hTrlTMuOR7+gvz+QMfsYQ=
 
-coffeescript@^2.5.1:
-  version "2.5.1"
-  resolved "https://registry.npm.taobao.org/coffeescript/download/coffeescript-2.5.1.tgz?cache=0&sync_timestamp=1589707312609&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fcoffeescript%2Fdownload%2Fcoffeescript-2.5.1.tgz#b2442a1f2c806139669534a54adc35010559d16a"
-  integrity sha1-skQqHyyAYTlmlTSlStw1AQVZ0Wo=
-
 content-disposition@~0.5.2:
   version "0.5.4"
   resolved "https://registry.npmmirror.com/content-disposition/download/content-disposition-0.5.4.tgz#8b82b4efac82512a02bb0b1dcec9d2c5e8eb5bfe"

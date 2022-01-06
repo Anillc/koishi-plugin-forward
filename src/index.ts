@@ -26,8 +26,7 @@ function ignore(text:string){
     if(seg[0].data.content.startsWith('//')) return true;
     const isa:boolean=seg[0].type=='quote';
     const isb:boolean=seg[2].data.content.trim().startsWith('//');
-    const is=isa && isb;
-    return is;
+    return isa&&isb;
 }
 
 const mid=(ctx:Context)=>(session:Session,next: () => void)=>{
