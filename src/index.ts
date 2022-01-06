@@ -1,4 +1,4 @@
-import {Context, Model, Channel, segment, Session,Observed} from 'koishi';
+import {Channel, Context, Model, Observed, segment, Session} from 'koishi';
 
 declare module 'koishi'{
     interface Channel{
@@ -26,7 +26,7 @@ function ignore(text:string){
     if(seg[0].data.content.startsWith('//')) return true;
     const isa:boolean=seg[0].type=='quote';
     const isb:boolean=seg[2].data.content.trim().startsWith('//');
-    return isa && isb
+    return isa && isb;
 }
 
 const mid=(ctx:Context)=>(session:Session,next: () => void)=>{
