@@ -1,5 +1,4 @@
-//@ts-
-import {Context, Model, Channel, segment, Session,Observed} from 'koishi';
+import {Channel, Context, Model, Observed, segment, Session} from 'koishi';
 
 declare module 'koishi'{
     interface Channel{
@@ -23,6 +22,7 @@ async function updateChannels(ctx:Context){
 
 function ignore(text:string){
     const seg=segment.parse(text);
+    if(!seg) return false;
     if(seg[0].data.content.startsWith('//')) return true;
     const isa:boolean=seg[0].type=='quote';
     const isb:boolean=seg[2].data.content.trim().startsWith('//');
@@ -30,20 +30,22 @@ function ignore(text:string){
 }
 
 const mid=(ctx:Context)=>(session:Session,next: () => void)=>{
-    const content:string=session.content as string;
-    let forward:string;
-    if(!session.channelId || ignore(content)) return next();
-    try{
-        const rn=channels.find((n)=>n.id==`${session.platform}:${session.channelId}`);
-        // @ts-expect-error
-        forward=rn.forward;
-    }catch(e){
-        updateChannels(ctx);
+    if(session.content){
+        const content:string=session.content;
+        let forward:string[];
+        if(!session.channelId || ignore(content)) return next();
+        try{
+            const rn=channels.find((n)=>n.id==`${session.platform}:${session.channelId}`);
+            // @ts-expect-error
+            forward=rn.forward;
+        }catch(e){
+            updateChannels(ctx);
+            return next();
+        }
+        //@ts-expect-error
+        ctx.broadcast(forward,`${session.author.username}: ${content}`);
         return next();
-    }
-    //@ts-expect-error
-    ctx.broadcast(forward+`${session.author.username}: ${content}`);
-    next();
+    }else return next();
 }
 
 const name='forward-cli';
@@ -53,7 +55,7 @@ async function apply(ctx:Context){
         await initDB(ctx);
         await updateChannels(ctx);
         ctx.middleware(mid(ctx));
-        const cmd=ctx.command('forward <to>',{authority:2});
+        const cmd=ctx.command('forward <to>','跨频道消息转发CLI',{authority:2});
         cmd.option('remove','-r 删除转发')
             .action(({session,options},to)=>{
                 // @ts-expect-error
