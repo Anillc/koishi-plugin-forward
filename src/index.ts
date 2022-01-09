@@ -23,7 +23,9 @@ async function updateChannels(ctx:Context){
 function ignore(text:string){
     const seg = segment.parse(text);
     if (!seg) return false;
-    if (seg[0].data.content.startsWith('//')) return true;
+    if (seg[0].type === 'text') {
+        if (seg[0].data.content.startsWith('//')) return true;
+    }
     if (seg[2]) {
         const isa: boolean = seg[0].type == 'quote';
         const isb: boolean = seg[2].data.content.trim().startsWith('//');
@@ -59,7 +61,8 @@ async function apply(ctx:Context){
         await updateChannels(ctx);
         ctx.middleware(mid(ctx));
         const cmd=ctx.command('forward <to>','跨频道消息转发CLI',{authority:2});
-        cmd.option('remove','-r 删除转发')
+        cmd.option('remove', '-r 删除转发')
+            .channelFields(['forward'])
             .action(({session,options},to)=>{
                 // @ts-expect-error
                 const chn=session.channel as Observed<Channel>;
