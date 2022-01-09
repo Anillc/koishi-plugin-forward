@@ -13,11 +13,10 @@ async function initDB(ctx:Context){
     ctx.model.extend('channel',extOpt);
 }
 
-// @ts-expect-error
-let channels:Pick<Channel, string>[];
+let channels: Channel[];
 
 async function updateChannels(ctx:Context){
-    channels=await ctx.database.getAssignedChannels(['id','forward']);
+    channels = await ctx.database.getAssignedChannels();
 }
 
 function ignore(text:string){
@@ -34,23 +33,25 @@ function ignore(text:string){
     return false;
 }
 
-const mid=(ctx:Context)=>(session:Session,next: () => void)=>{
-    if(session.content){
-        const content:string=session.content;
-        let forward: string[];
-        if (!session.channelId || ignore(content)) return next();
-        try {
-            const rn = channels.find((n) => n.id == `${session.platform}:${session.channelId}`);
-            // @ts-expect-error
-            forward = rn.forward;
-        } catch (e) {
-            updateChannels(ctx);
+function mid(ctx: Context) {
+    return async function (session: Session, next: () => void) {
+        if (session.content) {
+            const content: string = session.content;
+            let forward: string[] = [];
+            if (!session.channelId || ignore(content)) return next();
+            try {
+                const rn = channels.find((n) => (n.id == `${session.channelId}`) && (n.platform == `${session.platform}`));
+                // @ts-expect-error
+                forward = rn.forward;
+            } catch (e) {
+                await updateChannels(ctx);
+                return next();
+            }
+            ctx.logger('').info(`Send Forward:${JSON.stringify(forward)}`);
+            await ctx.broadcast(forward, `${session.username}: ${content}`);
             return next();
-        }
-        ctx.logger('').info(`Send Forward:${JSON.stringify(forward)}`);
-        ctx.broadcast(forward, `${session.username}: ${content}`);
-        return next();
-    }else return next();
+        } else return next();
+    }
 }
 
 const name='forward-cli';
