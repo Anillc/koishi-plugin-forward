@@ -37,18 +37,18 @@ function ignore(text:string){
 const mid=(ctx:Context)=>(session:Session,next: () => void)=>{
     if(session.content){
         const content:string=session.content;
-        let forward:string[];
-        if(!session.channelId || ignore(content)) return next();
-        try{
-            const rn=channels.find((n)=>n.id==`${session.platform}:${session.channelId}`);
+        let forward: string[];
+        if (!session.channelId || ignore(content)) return next();
+        try {
+            const rn = channels.find((n) => n.id == `${session.platform}:${session.channelId}`);
             // @ts-expect-error
-            forward=rn.forward;
-        }catch(e){
+            forward = rn.forward;
+        } catch (e) {
             updateChannels(ctx);
             return next();
         }
-        //@ts-expect-error
-        ctx.broadcast(forward,`${session.author.username}: ${content}`);
+        ctx.logger('').info(`Send Forward:${JSON.stringify(forward)}`);
+        ctx.broadcast(forward, `${session.username}: ${content}`);
         return next();
     }else return next();
 }
@@ -68,34 +68,34 @@ async function apply(ctx:Context){
                 const chn=session.channel as Observed<Channel>;
                 const forward=chn.forward;
                 if(!to) return '缺少必要参数';
-                const i=forward.indexOf(to);
+                const i = forward.indexOf(to);
                 // @ts-expect-error
-                if(options.remove){
-                    if(i==-1) return '没有转发到该频道的记录';
-                    forward.splice(i,1);
+                if (options.remove) {
+                    if (i == -1) return '没有转发到该频道的记录';
+                    forward.splice(i, 1);
                     return '删除成功！请使用forward.update更新'
                 }
-                if(i>=0) return '已经存在记录';
+                if (i >= 0) return '已经存在记录';
                 forward.push(to);
                 return '添加成功！，请使用forward.update更新'
-            })
-        cmd.subcommand('.list',{authority:2})
+            });
+        cmd.subcommand('.list', {authority: 2})
             .channelFields(['forward'])
-            .action(({session})=>{
+            .action(({session}) => {
                 // @ts-expect-error
-                const chn=session.channel as Observed<Channel>;
-                const forward=chn.forward;
+                const chn = session.channel as Observed<Channel>;
+                const forward = chn.forward;
                 return JSON.stringify(forward);
-            })
-        cmd.subcommand('.info',{authority:2})
+            });
+        cmd.subcommand('.info', {authority: 2})
             .action(async ({session}) => {
                 return `${session?.platform}:${session?.channelId}`;
-            })
-        cmd.subcommand('.update',{authority:2})
-            .action(async ()=>{
+            });
+        cmd.subcommand('.update', {authority: 2})
+            .action(async () => {
                 await updateChannels(ctx);
                 return '更新成功！';
-            })
+            });
     })
 }
 
