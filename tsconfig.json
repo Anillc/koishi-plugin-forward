@@ -103,9 +103,10 @@
     /* Skip type checking all .d.ts files. */
   },
   "include": [
-    "src/**/*.ts"
+    "./src/**/*"
   ],
   "exclude": [
-    "test/**/*.ts"
+    "./test/**/*",
+    "./**/*.spec.ts"
   ]
 }

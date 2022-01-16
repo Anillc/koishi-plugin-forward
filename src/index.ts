@@ -78,7 +78,7 @@ async function apply(ctx:Context){
                 }
                 if (i >= 0) return '已经存在记录';
                 forward.push(to);
-                return '添加成功！，请使用forward.update更新'
+                return '添加成功！请使用forward.update更新'
             });
         cmd.subcommand('.list', {authority: 2})
             .channelFields(['forward'])
