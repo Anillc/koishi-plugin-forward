@@ -11,8 +11,17 @@ const c1 = app.mock.client("123", "456");
 
 app.plugin(forward);
 
+async function onReady(){
+    return new Promise<void>(function(resolve, reject){
+        app.on('ready',()=>{
+            resolve();
+        })
+    })
+}
+
 before(async () => {
     await app.start();
+    await onReady();
 });
 describe('Forward CLI', () => {
     describe('CLI', () => {
