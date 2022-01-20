@@ -1,103 +1,67 @@
-import {Channel, Context, Model, Observed, segment, Session} from 'koishi';
+import { Context, Session, Logger, segment } from 'koishi'
 
-declare module 'koishi'{
-    interface Channel{
-        forward:Array<string>,
+declare module 'koishi' {
+    interface Channel {
+        forward: Array<string>
     }
 }
 
-async function initDB(ctx:Context){
-    const extOpt:Model.Field.Extension={
-        forward:'list'
-    }
-    ctx.model.extend('channel',extOpt);
+const logger = new Logger('forward')
+
+const forwarding: Record<string, Array<string>> = {}
+
+export const name='forward';
+
+export async function apply(ctx:Context){
+    ctx.model.extend('channel', { forward: 'list' })
+    await new Promise(cb => ctx.using(['database'], cb))
+    const channels = await ctx.database.get('channel', {}, ['platform', 'id', 'forward'])
+    channels.forEach(channel => forwarding[`${channel.platform}:${channel.id}`] = channel.forward)
+    ctx.middleware(mid(ctx))
+    ctx.command('forward <to>','消息转发', { authority: 2 })
+        .option('remove', '-r 删除转发')
+        .option('list', '-l 查看转发列表')
+        .option('info', '-i 查看本群 id')
+        .channelFields(['forward'])
+        .action(({ session, options }, to) => {
+            if (!session.channelId) return '请在群聊中使用该指令'
+            const forward = session.channel.forward
+            const id = `${session.platform}:${session.channelId}`
+
+            if (options.list) return JSON.stringify(forward)
+            if (options.info) return id
+            if (!to) return '缺少必要参数'
+
+            const index = forward.indexOf(to)
+            if (options.remove) {
+                if (index == -1) return '没有转发到该频道的记录'
+                forward.splice(index, 1)
+                forwarding[id] = forward
+                return '删除成功!'
+            }
+            if (index >= 0) return '已经存在记录';
+            forward.push(to);
+            forwarding[id] = forward
+            return '添加成功!'
+        });
 }
 
-let channels: Channel[];
-
-async function updateChannels(ctx:Context){
-    channels = await ctx.database.getAssignedChannels();
-}
-
-function ignore(text:string){
-    const seg = segment.parse(text);
-    if (!seg) return false;
-    if (seg[0].type === 'text') {
-        if (seg[0].data.content.startsWith('//')) return true;
+function ignore(text: string){
+    if (!text) return true
+    const seg = segment.parse(text)
+    if (seg[0].type === 'quote') {
+        seg.shift()
     }
-    if (seg[2]) {
-        const isa: boolean = seg[0].type == 'quote';
-        const isb: boolean = seg[2].data.content.trim().startsWith('//');
-        return isa && isb;
-    }
-    return false;
+    return segment.join(seg).trim().startsWith('//')
 }
 
 function mid(ctx: Context) {
-    return async function (session: Session, next: () => void) {
-        if (session.content) {
-            const content: string = session.content;
-            let forward: string[] = [];
-            if (!session.channelId || ignore(content)) return next();
-            try {
-                const rn = channels.find((n) => (n.id == `${session.channelId}`) && (n.platform == `${session.platform}`));
-                // @ts-expect-error
-                forward = rn.forward;
-            } catch (e) {
-                await updateChannels(ctx);
-                return next();
-            }
-            ctx.logger('').info(`Send Forward:${JSON.stringify(forward)}`);
-            await ctx.broadcast(forward, `${session.username}: ${content}`);
-            return next();
-        } else return next();
+    return function (session: Session, next: () => void) {
+        const content: string = session.content
+        if (!session.channelId || ignore(content)) return next()
+        const forward = forwarding[`${session.platform}:${session.channelId}`]
+        ctx.broadcast(forward, `${session.username}: ${content}`)
+        logger.debug(`forwarding: ${JSON.stringify(forward)} ${content}`)
+        return next()
     }
 }
-
-const name='forward-cli';
-
-async function apply(ctx:Context){
-    ctx.on('ready',async ()=>{
-        await initDB(ctx);
-        await updateChannels(ctx);
-        ctx.middleware(mid(ctx));
-        const cmd=ctx.command('forward <to>','跨频道消息转发CLI',{authority:2});
-        cmd.option('remove', '-r 删除转发')
-            .channelFields(['forward'])
-            .action(({session,options},to)=>{
-                // @ts-expect-error
-                const chn=session.channel as Observed<Channel>;
-                const forward=chn.forward;
-                if(!to) return '缺少必要参数';
-                const i = forward.indexOf(to);
-                // @ts-expect-error
-                if (options.remove) {
-                    if (i == -1) return '没有转发到该频道的记录';
-                    forward.splice(i, 1);
-                    return '删除成功！请使用forward.update更新'
-                }
-                if (i >= 0) return '已经存在记录';
-                forward.push(to);
-                return '添加成功！请使用forward.update更新'
-            });
-        cmd.subcommand('.list', {authority: 2})
-            .channelFields(['forward'])
-            .action(({session}) => {
-                // @ts-expect-error
-                const chn = session.channel as Observed<Channel>;
-                const forward = chn.forward;
-                return JSON.stringify(forward);
-            });
-        cmd.subcommand('.info', {authority: 2})
-            .action(async ({session}) => {
-                return `${session?.platform}:${session?.channelId}`;
-            });
-        cmd.subcommand('.update', {authority: 2})
-            .action(async () => {
-                await updateChannels(ctx);
-                return '更新成功！';
-            });
-    })
-}
-
-export {name,apply};
