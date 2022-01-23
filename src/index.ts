@@ -59,7 +59,7 @@ function mid(ctx: Context) {
         const chain = segment.parse(session.content)
         if (!session.channelId || ignore(chain)) return next()
         const forward = forwarding[`${session.platform}:${session.channelId}`]
-        forward.forEach(to => {
+        forward.forEach(async to => {
             const [toPlatform, toChannelId] = to.split(':')
             const quote = chain?.[0]
             let start = 0
@@ -78,6 +78,22 @@ function mid(ctx: Context) {
                         id: data[0],
                         channelId: data[1],
                     },
+                }
+            }
+
+            // transform images
+            for (const i in chain) {
+                const seg = chain[i]
+                if (seg.type !== 'image' || !seg.data.url?.startsWith('http')) continue
+                const data = await ctx.http.get(seg.data.url, {
+                    responseType: 'arraybuffer'
+                })
+                const img = Buffer.from(data).toString('base64')
+                chain[i] = {
+                    type: 'image',
+                    data: {
+                        url: `base64://${img}`,
+                    }
                 }
             }
 
