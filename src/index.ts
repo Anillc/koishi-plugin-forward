@@ -9,7 +9,7 @@ declare module 'koishi' {
 const logger = new Logger('forward')
 
 const forwarding: Record<string, Array<string>> = {}
-const messageRecord: Array<[string, string, string, string]> = []
+const messageRecord: Array<[string, string, [string, string], [string, string]]> = []
 
 export const name = 'forward'
 
@@ -60,19 +60,35 @@ function mid(ctx: Context) {
         if (!session.channelId || ignore(chain)) return next()
         const forward = forwarding[`${session.platform}:${session.channelId}`]
         forward.forEach(to => {
-            const [toPlatform] = to.split(':')
-            const content = segment.transform(chain, {
-                quote({ id }) {
-                    let rec = messageRecord.find(([platform1, platform2, id1]) =>
-                        platform1 === session.platform && platform2 === toPlatform && id1 === id)
-                    return segment('quote', {
-                        id: rec?.[3] || id
-                    })
+            const [toPlatform, toChannelId] = to.split(':')
+            const quote = chain?.[0]
+            let start = 0
+
+            // transform quote
+            if(quote?.type === 'quote') {
+                start++
+                const rec = messageRecord.find(([platform1, platform2, [id1], [id2]]) =>
+                    platform1 === session.platform && platform2 === toPlatform && id1 === quote.data.id ||
+                    platform1 === toPlatform && platform2 === session.platform && id2 === quote.data.id)
+                const data = rec?.[2][0] === quote.data.id ? rec?.[3] : rec?.[2]
+                if (!data) return
+                chain[0] = {
+                    type: 'quote',
+                    data: {
+                        id: data[0],
+                        channelId: data[1],
+                    },
                 }
+            }
+
+            chain.splice(start, 0, {
+                type: 'text',
+                data: {
+                    content: `${session.username}: `,
+                },
             })
-            ctx.broadcast([to], `${session.username}: ${content}`).then(([id]) => {
-                messageRecord.push([session.platform, toPlatform, session.messageId, id])
-                messageRecord.push([toPlatform, session.platform, id, session.messageId])
+            ctx.broadcast([to], segment.join(chain)).then(([id]) => {
+                messageRecord.push([session.platform, toPlatform, [session.messageId, session.channelId], [id, toChannelId]])
                 if (messageRecord.length > 1000) {
                     messageRecord.shift()
                 }
