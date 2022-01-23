@@ -85,15 +85,19 @@ function mid(ctx: Context) {
             for (const i in chain) {
                 const seg = chain[i]
                 if (seg.type !== 'image' || !seg.data.url?.startsWith('http')) continue
-                const data = await ctx.http.get(seg.data.url, {
-                    responseType: 'arraybuffer'
-                })
-                const img = Buffer.from(data).toString('base64')
-                chain[i] = {
-                    type: 'image',
-                    data: {
-                        url: `base64://${img}`,
+                try {
+                    const data = await ctx.http.get(seg.data.url, {
+                        responseType: 'arraybuffer'
+                    })
+                    const img = Buffer.from(data).toString('base64')
+                    chain[i] = {
+                        type: 'image',
+                        data: {
+                            url: `base64://${img}`,
+                        }
                     }
+                } catch (e) {
+                    logger.info('error while transforming images', e)
                 }
             }
 
