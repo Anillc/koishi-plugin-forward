@@ -57,9 +57,9 @@ function ignore(chain: segment.Chain){
 function mid(ctx: Context) {
     return function (session: Session, next: () => void) {
         const chain = segment.parse(session.content)
-        if (!session.channelId || ignore(chain)) return next()
+        if (!session.channel || ignore(chain)) return next()
         const forward = forwarding[`${session.platform}:${session.channelId}`]
-        forward.forEach(async to => {
+        forward?.forEach(async to => {
             const [toPlatform, toChannelId] = to.split(':')
             const quote = chain?.[0]
             let start = 0
