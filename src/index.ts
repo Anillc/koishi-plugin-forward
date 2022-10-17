@@ -2,13 +2,15 @@ import { Context, Session, Logger, segment } from 'koishi'
 
 declare module 'koishi' {
     interface Channel {
-        forward: Array<string>
+        forward: Array<string>,
+        forwardInvert: boolean,
     }
 }
 
 const logger = new Logger('forward')
 
-const forwarding: Record<string, Array<string>> = {}
+// from, [invert, to]
+const forwarding: Record<string, [boolean, Array<string>]> = {}
 // cid, messageId
 const messageRecord: Array<[[string, string], [string, string]]> = []
 
@@ -17,35 +19,46 @@ export const name = 'forward'
 export const using = ['database']
 
 export async function apply(ctx:Context) {
-    ctx.model.extend('channel', { forward: 'list' })
-    const channels = await ctx.database.get('channel', {}, ['platform', 'id', 'forward'])
-    channels.forEach(channel => forwarding[`${channel.platform}:${channel.id}`] = channel.forward)
+    ctx.model.extend('channel', {
+        forward: 'list',
+        forwardInvert: {
+            type: 'boolean',
+            initial: false,
+        },
+    })
+    const channels = await ctx.database.get('channel', {}, ['platform', 'id', 'forward', 'forwardInvert'])
+    channels.forEach(channel => forwarding[`${channel.platform}:${channel.id}`] = [channel.forwardInvert, channel.forward])
     ctx.middleware(mid(ctx))
     ctx.command('forward [to]','消息转发', { authority: 2 })
         .option('remove', '-r 删除转发')
         .option('list', '-l 查看转发列表')
         .option('info', '-i 查看本群 id')
-        .channelFields(['forward'])
+        .option('invert', '-n 反转默认转发行为')
+        .channelFields(['forward', 'forwardInvert'])
         .action(({ session, options }, to) => {
             if (!session.channelId) return '请在群聊中使用该指令'
             const forward = session.channel.forward
 
-            console.log(123);
-            
             if (options.list) return JSON.stringify(forward)
             if (options.info) return session.cid
+            if (options.invert) {
+                const invert = !session.channel.forwardInvert
+                session.channel.forwardInvert = invert
+                forwarding[session.cid] = [invert, forwarding[session.cid][1]]
+                return `转发模式已切换。当前状态为: ${invert ? '默认不转发' : '默认转发'}`
+            }
             if (!to) return '缺少必要参数'
 
             const index = forward.indexOf(to)
             if (options.remove) {
                 if (index == -1) return '没有转发到该频道的记录'
                 forward.splice(index, 1)
-                forwarding[session.cid] = forward
+                forwarding[session.cid] = [false, forward]
                 return '删除成功!'
             }
             if (index >= 0) return '已经存在记录'
             forward.push(to);
-            forwarding[session.cid] = forward
+            forwarding[session.cid] = [false, forward]
             return '添加成功!'
         });
 }
@@ -53,9 +66,10 @@ export async function apply(ctx:Context) {
 function mid(ctx: Context) {
     return function (session: Session, next: () => void) {
         const forward = forwarding[session.cid]
-        if (!session.channel || session.content.startsWith('//') || !forward) return next()
-        forward.forEach(async to => {
-            const [toPlatform, toChannelId] = to.split(':')
+        if (!session.channel || !forward) return next()
+        if (forward[0] !== session.content?.startsWith('//')) return next()
+        forward[1].forEach(async to => {
+            const [, toChannelId] = to.split(':')
             const elements = segment.parse(session.content)
 
             // transform images
